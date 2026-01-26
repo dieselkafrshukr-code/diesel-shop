@@ -80,7 +80,7 @@ const products = [
     { id: 903, name: "تيشيرت ساده - موديل 3", price: 80, category: "men", subCategory: "tshirts", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=T-shirt+3", badge: "BEST", sizes: ["M", "L", "XL", "XXL"], colors: ["أحمر", "أصفر"] },
     { id: 904, name: "تيشيرت ساده - موديل 4", price: 80, category: "men", subCategory: "tshirts", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=T-shirt+4", badge: "BEST", sizes: ["M", "L", "XL", "XXL"], colors: ["أخضر", "أزرق"] },
     { id: 905, name: "تيشيرت ساده - موديل 5", price: 80, category: "men", subCategory: "tshirts", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=T-shirt+5", badge: "BEST", sizes: ["M", "L", "XL", "XXL"], colors: ["برتقالي", "أسود"] },
-
+    { id: 906, name: "تيشيرت ساده - موديل 6", price: 80, category: "men", subCategory: "tshirts", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=T-shirt+5", badge: "BEST", sizes: ["M", "L", "XL", "XXL"], colors: ["برتقالي", "أسود"] },
     // Polos (5)
     { id: 1001, name: "بولو شيك - موديل 1", price: 120, category: "men", subCategory: "polo", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=Polo+1", badge: "TREND", sizes: ["M", "L", "XL"], colors: ["كحلي", "أبيض"] },
     { id: 1002, name: "بولو شيك - موديل 2", price: 120, category: "men", subCategory: "polo", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=Polo+2", badge: "TREND", sizes: ["M", "L", "XL"], colors: ["أسود", "رمادي"] },
