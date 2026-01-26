@@ -1,6 +1,6 @@
 const products = [
     // --- NEW MEN ARRIVALS ---
-    { id: 1, name: "هودي سوستة شتوي - برتقالي", price: 200, category: "men", subCategory: "hoodies", image: "images/hoodies/hoodie1.png", badge: "SALE", sizes: ["M", "L", "XL", "XXL"], colors: ["برتقالي", "أسود", "كحلي", "رمادي"] },
+    { id: 1, name: "هودي سوستة شتوي - برتقالي", price: 20, category: "men", subCategory: "hoodies", image: "images/hoodies/hoodie1.png", badge: "SALE", sizes: ["M", "L", "XL", "XXL"], colors: ["برتقالي", "أسود", "كحلي", "رمادي"] },
     { id: 2, name: "هودي سوستة تشكيلة ألوان", price: 500, category: "men", subCategory: "hoodies", image: "images/hoodies/hoodie2.png", badge: "SALE", sizes: ["L", "XL"], colors: ["نبيتي", "رمادي", "أسود"] },
     { id: 3, name: "هودي سوستة أسود - مطبوع", price: 50, category: "men", subCategory: "hoodies", image: "images/hoodies/hoodie3.png", badge: "SALE", sizes: ["XL", "XXL"], colors: ["أسود"] },
     { id: 4, name: "هودي سوستة رمادي - ستايل", price: 50, category: "men", subCategory: "hoodies", image: "images/hoodies/hoodie4.png", badge: "SALE", sizes: ["M", "L", "XL"], colors: ["رمادي"] },
