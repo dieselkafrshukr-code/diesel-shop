@@ -1,0 +1,290 @@
+// 🚀 DIESEL ADMIN ENGINE - HYBRID VERSION (Firebase + Local Fallback)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+let db = null;
+let productsCol = null;
+let isFirebaseReady = false;
+
+// Initialize Firebase if keys are provided
+if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    productsCol = db.collection('products');
+    isFirebaseReady = true;
+}
+
+// DOM Elements
+const form = document.getElementById('saveProductForm');
+const productsListBody = document.getElementById('products-list-body');
+const subCatSelect = document.getElementById('p-subcategory');
+const previewImg = document.getElementById('preview-img');
+const globalLoader = document.getElementById('global-loader');
+
+const subMap = {
+    clothes: [
+        { id: 'hoodies', label: 'هوديز' },
+        { id: 'jackets', label: 'جواكت' },
+        { id: 'pullover', label: 'بلوفر' },
+        { id: 'shirts', label: 'قمصان' },
+        { id: 'coats', label: 'بالطو' },
+        { id: 'tshirts', label: 'تيشيرت' },
+        { id: 'polo', label: 'بولو' }
+    ],
+    pants: [
+        { id: 'jeans', label: 'جينز' },
+        { id: 'sweatpants', label: 'سويت بانتس' }
+    ],
+    shoes: [
+        { id: 'shoes', label: 'أحذية' }
+    ]
+};
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    updateSubCats();
+    loadProducts();
+    if (!isFirebaseReady) {
+        console.warn("⚠️ Firebase keys missing. Running in LOCAL MODE (Changes saved to this browser only).");
+    }
+});
+
+function toggleForm() {
+    const f = document.getElementById('productForm');
+    f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    if (f.style.display === 'none') {
+        form.reset();
+        previewImg.style.display = 'none';
+        document.getElementById('edit-id').value = '';
+        document.getElementById('p-image-base64').value = '';
+        document.getElementById('form-title').innerText = 'إضافة منتج جديد';
+    }
+}
+
+function updateSubCats() {
+    const cat = document.getElementById('p-category').value;
+    const items = subMap[cat] || [];
+    subCatSelect.innerHTML = items.map(i => `<option value="${i.id}">${i.label}</option>`).join('');
+}
+
+// Handle Image & Base64
+async function handleImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const base64 = e.target.result;
+            const img = new Image();
+            img.src = base64;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 450;
+                const scaleSize = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scaleSize;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+                document.getElementById('p-image-base64').value = compressedBase64;
+                previewImg.src = compressedBase64;
+                previewImg.style.display = 'block';
+            };
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// CRUD: Create / Update
+form.onsubmit = async (e) => {
+    e.preventDefault();
+    showLoader(true);
+
+    const id = document.getElementById('edit-id').value;
+    const data = {
+        name: document.getElementById('p-name').value,
+        price: Number(document.getElementById('p-price').value),
+        category: "men",
+        parentCategory: document.getElementById('p-category').value,
+        subCategory: document.getElementById('p-subcategory').value,
+        sizes: document.getElementById('p-sizes').value.split(',').map(s => s.trim()),
+        colors: document.getElementById('p-colors').value.split(',').map(c => c.trim()),
+        badge: document.getElementById('p-badge').value,
+        image: document.getElementById('p-image-base64').value || (id ? undefined : 'https://placehold.co/400x600?text=No+Image'),
+        updatedAt: new Date().toISOString()
+    };
+
+    try {
+        if (isFirebaseReady) {
+            if (id) {
+                await productsCol.doc(id).update(data);
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await productsCol.add(data);
+            }
+        } else {
+            // Local Storage Logic
+            let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+            if (id) {
+                const index = localProds.findIndex(p => p.id == id);
+                if (index !== -1) {
+                    if (!data.image) data.image = localProds[index].image;
+                    localProds[index] = { ...localProds[index], ...data };
+                }
+            } else {
+                data.id = 'L' + Date.now();
+                data.createdAt = new Date().toISOString();
+                localProds.push(data);
+            }
+            localStorage.setItem('diesel_products', JSON.stringify(localProds));
+        }
+
+        alert("تم الحفظ بنجاح! ✅");
+        toggleForm();
+        loadProducts();
+    } catch (err) {
+        console.error(err);
+        alert("حدث خطأ! ❌");
+    }
+    showLoader(false);
+};
+
+// CRUD: Read
+async function loadProducts() {
+    try {
+        let allProducts = [];
+
+        if (isFirebaseReady) {
+            const snapshot = await productsCol.orderBy('createdAt', 'desc').get();
+            snapshot.forEach(doc => allProducts.push({ id: doc.id, ...doc.data() }));
+        }
+
+        // Also load from Local Storage
+        const localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+        allProducts = [...allProducts, ...localProds];
+
+        // Unique by ID
+        const uniqueProds = Array.from(new Map(allProducts.map(item => [item.id, item])).values());
+
+        let html = '';
+        let cats = { clothes: 0, shoes: 0, pants: 0 };
+
+        uniqueProds.forEach(p => {
+            cats[p.parentCategory] = (cats[p.parentCategory] || 0) + 1;
+            html += `
+                <tr>
+                    <td><img src="${p.image}" class="product-thumb"></td>
+                    <td>${p.name}</td>
+                    <td style="color:#d4af37; font-weight:bold;">${p.price} ج.م</td>
+                    <td>${p.subCategory}</td>
+                    <td class="actions">
+                        <i class="fas fa-edit btn-edit" onclick="editProduct('${p.id}')"></i>
+                        <i class="fas fa-trash btn-delete" onclick="deleteProduct('${p.id}')"></i>
+                    </td>
+                </tr>
+            `;
+        });
+
+        productsListBody.innerHTML = html || '<tr><td colspan="5" style="text-align:center">لا توجد منتجات. اضغط على "إعادة تهيئة المتجر" لسحب المنتجات الحالية.</td></tr>';
+        document.getElementById('stat-total').innerText = uniqueProds.length;
+        document.getElementById('stat-clothes').innerText = cats.clothes;
+        document.getElementById('stat-shoes').innerText = cats.shoes;
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// CRUD: Delete
+async function deleteProduct(id) {
+    if (!confirm("هل أنت متأكد من حذف هذا المنتج نهائياً؟")) return;
+    showLoader(true);
+    try {
+        if (isFirebaseReady && !id.startsWith('L')) {
+            await productsCol.doc(id).delete();
+        }
+        // Always try to delete from local too
+        let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+        localProds = localProds.filter(p => p.id != id);
+        localStorage.setItem('diesel_products', JSON.stringify(localProds));
+
+        loadProducts();
+    } catch (err) {
+        alert("فشل الحذف!");
+    }
+    showLoader(false);
+}
+
+// CRUD: Edit
+async function editProduct(id) {
+    let p = null;
+    if (isFirebaseReady && !id.startsWith('L')) {
+        const doc = await productsCol.doc(id).get();
+        p = doc.data();
+    } else {
+        const localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+        p = localProds.find(item => item.id == id);
+    }
+
+    if (!p) return;
+
+    document.getElementById('edit-id').value = id;
+    document.getElementById('p-name').value = p.name;
+    document.getElementById('p-price').value = p.price;
+    document.getElementById('p-category').value = p.parentCategory || 'clothes';
+    updateSubCats();
+    setTimeout(() => { document.getElementById('p-subcategory').value = p.subCategory; }, 10);
+    document.getElementById('p-sizes').value = (p.sizes || []).join(', ');
+    document.getElementById('p-colors').value = (p.colors || []).join(', ');
+    document.getElementById('p-badge').value = p.badge || '';
+    document.getElementById('p-image-base64').value = p.image;
+    previewImg.src = p.image;
+    previewImg.style.display = 'block';
+
+    document.getElementById('form-title').innerText = 'تعديل المنتج';
+    document.getElementById('productForm').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Migration: Initial Import
+async function resetStore() {
+    if (!confirm("سيتم سحب جميع منتجات الموقع الحالية لتتمكن من التحكم بها. استمرار؟")) return;
+    showLoader(true);
+
+    const script = document.createElement('script');
+    script.src = './js/products.js';
+    script.onload = async () => {
+        let localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+
+        for (const p of products) {
+            // Check if already exists by name to avoid duplicates
+            if (!localProds.some(lp => lp.name === p.name)) {
+                const newP = {
+                    ...p,
+                    id: 'L' + Date.now() + Math.random(),
+                    parentCategory: p.subCategory === 'shoes' ? 'shoes' : (p.subCategory === 'jeans' || p.subCategory === 'sweatpants' ? 'pants' : 'clothes'),
+                    createdAt: new Date().toISOString()
+                };
+                localProds.push(newP);
+
+                // If cloud is ready, also try to upload
+                if (isFirebaseReady) {
+                    try { await productsCol.add(newP); } catch (e) { }
+                }
+            }
+        }
+
+        localStorage.setItem('diesel_products', JSON.stringify(localProds));
+        alert("تم استيراد المنتجات بنجاح! 🎉 يمكنك الآن تعديلها أو حذفها.");
+        loadProducts();
+        showLoader(false);
+    };
+    document.body.appendChild(script);
+}
+
+function showLoader(show) { globalLoader.style.display = show ? 'flex' : 'none'; }

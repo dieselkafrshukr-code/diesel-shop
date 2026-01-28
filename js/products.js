@@ -88,5 +88,3 @@ const products = [
     { id: 1004, name: "بولو شيك - موديل 4", price: 120, category: "men", subCategory: "polo", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=Polo+4", badge: "TREND", sizes: ["M", "L", "XL"], colors: ["بيج", "أبيض"] },
     { id: 1005, name: "بولو شيك - موديل 5", price: 120, category: "men", subCategory: "polo", image: "https://placehold.co/600x800/1a1a1a/ffffff?text=Polo+5", badge: "TREND", sizes: ["M", "L", "XL"], colors: ["زيتي", "أسود"] },
 ];
-
-

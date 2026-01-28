@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | ديزل كفر شكر</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --admin-bg: #0a0a0a;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --accent: #e20613;
+        }
+
+        body {
+            background-color: var(--admin-bg);
+            color: #fff;
+            padding: 20px;
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-add {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-card i {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .stat-card h3 {
+            font-size: 1.5rem;
+            margin: 5px 0;
+        }
+
+        .product-form {
+            background: var(--panel-bg);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: none;
+            /* Hidden by default */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        input,
+        select,
+        textarea {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        .products-table-container {
+            background: var(--panel-bg);
+            border-radius: 15px;
+            padding: 20px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--accent);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .product-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-edit {
+            color: #4CAF50;
+            cursor: pointer;
+        }
+
+        .btn-delete {
+            color: #f44336;
+            cursor: pointer;
+        }
+
+        #preview-img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+            border: 2px solid var(--accent);
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loader-overlay" id="global-loader">
+        <div class="loader-content">
+            <h2 style="color:var(--accent)">جاري المعالجة...</h2>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <div class="header">
+            <h1>لوحة تحكم الديزل 🚀</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-add" onclick="toggleForm()"><i class="fas fa-plus"></i> إضافة منتج جديد</button>
+                <button class="btn-add" style="background:#444" onclick="location.href='index.html'"><i
+                        class="fas fa-eye"></i> عرض الموقع</button>
+                <button class="btn-add" style="background:#555" onclick="resetStore()"><i
+                        class="fas fa-trash-restore"></i> إعادة تهيئة المتجر</button>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <i class="fas fa-box"></i>
+                <p>إجمالي المنتجات</p>
+                <h3 id="stat-total">0</h3>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-tshirt"></i>
+                <p>ملابس</p>
+                <h3 id="stat-clothes">0</h3>
+            </div>
+            <div class="stat-card">
+                <i class="fas fa-shoe-prints"></i>
+                <p>أحذية</p>
+                <h3 id="stat-shoes">0</h3>
+            </div>
+        </div>
+
+        <div class="product-form" id="productForm">
+            <h2 id="form-title">إضافة منتج جديد</h2>
+            <form id="saveProductForm">
+                <input type="hidden" id="edit-id">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>اسم المنتج</label>
+                        <input type="text" id="p-name" required placeholder="مثال: هودي سوستة أسود">
+                    </div>
+                    <div class="form-group">
+                        <label>السعر (جنيه)</label>
+                        <input type="number" id="p-price" required placeholder="520">
+                    </div>
+                    <div class="form-group">
+                        <label>القسم الأساسي</label>
+                        <select id="p-category" onchange="updateSubCats()">
+                            <option value="clothes">ملابس</option>
+                            <option value="pants">بناطيل</option>
+                            <option value="shoes">أحذية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>القسم الفرعي</label>
+                        <select id="p-subcategory">
+                            <!-- Filled by JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>المقاسات (افصل بفاصلة)</label>
+                        <input type="text" id="p-sizes" value="M, L, XL, XXL" placeholder="M, L, XL">
+                    </div>
+                    <div class="form-group">
+                        <label>الألوان (افصل بفاصلة)</label>
+                        <input type="text" id="p-colors" value="أسود, رمادي, كحلي" placeholder="أسود, رمادي">
+                    </div>
+                    <div class="form-group">
+                        <label>شعار (Badge)</label>
+                        <input type="text" id="p-badge" placeholder="SALE أو NEW">
+                    </div>
+                    <div class="form-group">
+                        <label>صورة المنتج</label>
+                        <input type="file" id="p-image" accept="image/*" onchange="handleImage(this)">
+                        <img id="preview-img">
+                        <input type="hidden" id="p-image-base64">
+                    </div>
+                </div>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" class="btn-add">حفظ المنتج</button>
+                    <button type="button" class="btn-add" style="background:#555" onclick="toggleForm()">إلغاء</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="products-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>الاسم</th>
+                        <th>السعر</th>
+                        <th>القسم</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="products-list-body">
+                    <!-- Products will be listed here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <script src="./js/admin.js"></script>
+</body>
+
+</html>

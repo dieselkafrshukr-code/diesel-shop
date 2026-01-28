@@ -3,6 +3,23 @@ let cart = [];
 let selectedProductForSize = null;
 let selectedColor = null;
 let activeCategory = "men";
+let remoteProducts = []; // To store products from Firebase
+
+// Firebase Config (Must match admin.js)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase if config is provided
+if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+}
 
 // DOM Elements
 let menContainer, cartBtn, closeCart, cartSidebar, cartOverlay, loader, navbar, sizeModal, closeModal, modalProductName, modalProductPrice, mobileMenuBtn, navLinks, themeToggle, subFiltersContainer;
@@ -111,6 +128,19 @@ function setupEventListeners() {
         };
     }
 
+    const adminBtn = document.getElementById('admin-login-btn');
+    if (adminBtn) {
+        adminBtn.onclick = (e) => {
+            e.preventDefault();
+            const pass = prompt("الرجاء إدخال كلمة مرور المدير:");
+            if (pass === "admin123") { // يمكنك تغيير كلمة المرور هنا
+                window.location.href = "admin.html";
+            } else if (pass !== null) {
+                alert("كلمة المرور غير صحيحة! ❌");
+            }
+        };
+    }
+
     if (closeModal) closeModal.onclick = () => sizeModal.classList.remove('active');
 
     // DYNAMIC SIZE SELECTION (FIXED)
@@ -166,7 +196,7 @@ function showToast(msg) {
 
 // Global scope functions
 window.openSizeModal = (id) => {
-    const p = products.find(prod => prod.id === id);
+    const p = remoteProducts.find(prod => prod.id === id);
     if (!p) return;
     selectedProductForSize = p;
     selectedColor = (p.colors && p.colors.length > 0) ? p.colors[0] : null; // Default to first color
@@ -237,7 +267,45 @@ function updateCartUI() {
 
 function renderAll() {
     if (!menContainer) return;
-    menContainer.innerHTML = "";
+    menContainer.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#fff;">جاري تحميل المنتجات...</div>';
+
+    let allProds = [];
+
+    // 1. Get Local Storage Products
+    const localProds = JSON.parse(localStorage.getItem('diesel_products') || '[]');
+
+    // 2. Get Firebase Products (If configured)
+    if (typeof db !== 'undefined') {
+        db.collection('products').orderBy('createdAt', 'desc').get().then(snapshot => {
+            let fireProds = [];
+            snapshot.forEach(doc => fireProds.push({ id: doc.id, ...doc.data() }));
+
+            combineAndRender(fireProds, localProds);
+        }).catch(err => {
+            combineAndRender([], localProds);
+        });
+    } else {
+        combineAndRender([], localProds);
+    }
+}
+
+function combineAndRender(fireProds, localProds) {
+    // Combine all
+    remoteProducts = [...fireProds, ...localProds];
+
+    // If both empty, use the static products.js (Initial state)
+    if (remoteProducts.length === 0) {
+        remoteProducts = products;
+    }
+
+    // Filter out duplicates (if any) based on name
+    const seen = new Set();
+    remoteProducts = remoteProducts.filter(p => {
+        const duplicate = seen.has(p.name);
+        seen.add(p.name);
+        return !duplicate;
+    });
+
     filterAndRender('men', 'all', 'all');
 }
 
@@ -267,7 +335,7 @@ window.applySubFilter = (parent, subId, btn) => {
 function filterAndRender(section, parent, sub) {
     if (!menContainer) return;
 
-    let filtered = products;
+    let filtered = remoteProducts;
 
     if (parent !== 'all') {
         if (parent === 'clothes') {
@@ -295,7 +363,7 @@ function filterAndRender(section, parent, sub) {
             <div class="product-img">
                 ${p.badge ? `<span class="badge">${p.badge}</span>` : ''}
                 <img src="${p.image}" loading="lazy" alt="${p.name}">
-                <div class="product-actions" onclick="openSizeModal(${p.id})">
+                <div class="product-actions" onclick="openSizeModal('${p.id}')">
                     <button class="action-btn"><i class="fas fa-shopping-cart"></i></button>
                 </div>
             </div>
